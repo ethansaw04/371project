@@ -78,14 +78,21 @@ public class BluffServer {
         System.out.println("New round: " + roundCard + "s");
         broadcast("Round: " + roundCard);
     
+        ClientHandler needToRemove = null;
         for (ClientHandler player : new ArrayList<>(players)) {
             if (!players.contains(player)) continue;
-            player.requestPlay(roundCard);
+            if (!player.requestPlay(roundCard)) {
+                needToRemove = player;
+                break;
+            }
             
             // Wait for bluff call before proceeding to the next player's turn
             if (waitForBluffCall()) {  // This blocks the next player's turn until the bluff phase is resolved.
                 break;
             }
+        }
+        if (needToRemove != null) {
+            players.remove(needToRemove);
         }
     }
     
@@ -207,7 +214,7 @@ public class ClientHandler implements Runnable {
         sendMessage("Your hand: " + hand);
     }
 
-    public void requestPlay(String roundCard) {
+    public boolean requestPlay(String roundCard) {
         this.roundCard = roundCard;
         sendMessage("Your turn! Round is: " + roundCard);
         sendMessage("Your hand: " + hand);
@@ -224,9 +231,13 @@ public class ClientHandler implements Runnable {
     
             String move = actual + " " + fake;
             server.processMove(this, move, roundCard);
+        } catch (SocketException e) {
+            System.out.println("Player connection disconnected");
+            return false;
         } catch (IOException e) {
             e.printStackTrace();
         }
+        return true;
     }
 
     public List<String> getSelectedCards(int count, int fakeCount) {

@@ -19,6 +19,8 @@ public class BluffClient {
                     while ((serverMessage = in.readLine()) != null) {
                         System.out.println(serverMessage);
                     }
+                } catch (SocketException e) {
+                    System.out.println("Connection terminated.");
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
