@@ -93,18 +93,22 @@ public class BluffServer {
         try {
             String[] parts = move.split(" ");
             int declaredCount = Integer.parseInt(parts[0]);
-            List<String> playedCards = player.getSelectedCards(declaredCount);
+            int fakeCount = Integer.parseInt(parts[1]);
+            List<String> playedCards = player.getSelectedCards(declaredCount, fakeCount);
     
-            if (playedCards.isEmpty() || playedCards.size() != declaredCount) {
+            if (playedCards.isEmpty() || playedCards.size() != declaredCount + fakeCount) {
                 player.sendMessage("Invalid move! Try again.");
                 player.requestPlay(roundCard);
+                for (String str : playedCards) {
+                    player.addCard(str);
+                }
                 return;
             }
     
             lastPlayer = player;
             lastPlayedCards = playedCards;
     
-            broadcast("Player " + player.getPlayerID() + " played " + declaredCount + " " + roundCard + "(s).");
+            broadcast("Player " + player.getPlayerID() + " played " + (declaredCount + fakeCount) + " " + roundCard + "(s).");
             player.sendHand();
     
             // waitForBluffCall();  // Wait for a bluff call after the move.
@@ -207,17 +211,25 @@ public class ClientHandler implements Runnable {
         this.roundCard = roundCard;
         sendMessage("Your turn! Round is: " + roundCard);
         sendMessage("Your hand: " + hand);
-        sendMessage("Enter the number of '" + roundCard + "' cards you are playing:");
+        // sendMessage("Enter the number of '" + roundCard + "' cards you are playing:");
 
         try {
-            String move = in.readLine();
+            // String move = in.readLine();
+
+            sendMessage("Enter the number of ACTUAL '" + roundCard + "' cards you are playing:");
+            String actual = in.readLine();
+    
+            sendMessage("Enter the number of FAKE '" + roundCard + "' cards you are playing:");
+            String fake = in.readLine();
+    
+            String move = actual + " " + fake;
             server.processMove(this, move, roundCard);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public List<String> getSelectedCards(int count) {
+    public List<String> getSelectedCards(int count, int fakeCount) {
         List<String> selectedCards = new ArrayList<>();
         for (int i = 0; i < count && !hand.isEmpty(); i++) {
             boolean found = false;
@@ -233,6 +245,23 @@ public class ClientHandler implements Runnable {
                 selectedCards.add(hand.remove(0));
             }
         }
+
+        for (int i = 0; i < fakeCount && !hand.isEmpty(); i++) {
+            boolean found = false;
+            for (int j = 0; j < hand.size(); j++) {
+                if (!hand.get(j).equals(roundCard)) {
+                    //selectedCards.add(roundCard);
+                    selectedCards.add(hand.remove(j));
+                    // hand.remove(j);
+                    found = true;
+                    break;
+                }
+            }
+            // if (!found) {
+            //     selectedCards.add(hand.remove(0));
+            // }
+        }
+
         return selectedCards;
     }
 
