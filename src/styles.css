@@ -39,20 +39,32 @@ h1 {
     position: relative;
 }
 
+.card img {
+    width: 100%;
+    height: auto;
+    border-radius: 5px;
+}
+
 .card-container {
+    display: flex;
+    gap: 10px;
     margin-top: 10px;
+    justify-content: center;
+    visibility: hidden; /* Hide by default */
 }
 
 .card {
-    display: inline-block;
+    width: 60px; /* Adjust size as needed */
+    height: 90px;
     background-color: white;
-    color: black;
-    padding: 10px;
     border-radius: 5px;
-    margin: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px;
 }
 
-/* Show cards only when the player is hovered */
+/* Show cards only when the player's area is hovered */
 .player:hover .card-container {
     visibility: visible;
 }
@@ -94,3 +106,7 @@ button:hover {
     list-style: none;
     padding: 0;
 }
+
+
+
+
