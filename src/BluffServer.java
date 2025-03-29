@@ -69,49 +69,53 @@ public class BluffServer {
             case 2 -> "Q";
             default -> "";
         };
-
+    
         System.out.println("New round: " + roundCard + "s");
         broadcast("Round: " + roundCard);
-
+    
         for (ClientHandler player : new ArrayList<>(players)) {
             if (!players.contains(player)) continue;
             player.requestPlay(roundCard);
+            
+            // Wait for bluff call before proceeding to the next player's turn
+            waitForBluffCall();  // This blocks the next player's turn until the bluff phase is resolved.
         }
     }
-
+    
     public void processMove(ClientHandler player, String move, String roundCard) {
         try {
             String[] parts = move.split(" ");
-            int declaredCount = Integer.parseInt(parts[0]);  
+            int declaredCount = Integer.parseInt(parts[0]);
             List<String> playedCards = player.getSelectedCards(declaredCount);
-
+    
             if (playedCards.isEmpty() || playedCards.size() != declaredCount) {
                 player.sendMessage("Invalid move! Try again.");
                 player.requestPlay(roundCard);
                 return;
             }
-
+    
             lastPlayer = player;
             lastPlayedCards = playedCards;
-
+    
             broadcast("Player " + player.getPlayerID() + " played " + declaredCount + " " + roundCard + "(s).");
             player.sendHand();
-
-            waitForBluffCall();
-
+    
+            // waitForBluffCall();  // Wait for a bluff call after the move.
+    
         } catch (Exception e) {
             player.sendMessage("Invalid input. Try again.");
             player.requestPlay(roundCard);
         }
     }
-
+    
     private void waitForBluffCall() {
         broadcast("Anyone can type 'BLUFF' to call a bluff!");
-
-        new Thread(() -> {
+    
+        // Use a synchronized block to make sure only one player can call bluff at a time.
+        synchronized (this) {
             long startTime = System.currentTimeMillis();
             boolean bluffCalled = false;
-
+    
             while (System.currentTimeMillis() - startTime < 5000) {
                 for (ClientHandler player : players) {
                     if (player.isBluffCalled()) {
@@ -121,11 +125,11 @@ public class BluffServer {
                     }
                 }
             }
-
+    
             if (!bluffCalled) {
                 broadcast("No one called bluff. Round continues.");
             }
-        }).start();
+        }
     }
 
     private void resolveBluff(ClientHandler accuser) {
