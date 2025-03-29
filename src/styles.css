@@ -52,11 +52,6 @@ h1 {
     margin: 5px;
 }
 
-/* Hide all card containers initially */
-.hidden {
-    visibility: hidden;
-}
-
 /* Show cards only when the player is hovered */
 .player:hover .card-container {
     visibility: visible;
