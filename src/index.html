@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liar's Bar</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="game-container">
+        <h1>Liar's Bar</h1>
+        <div class="table">
+            <div class="player" id="player1">
+                Player 1
+                <div class="card-container hidden" data-player="player1">
+                    <div class="card">🃏</div>
+                    <div class="card">🃏</div>
+                    <div class="card">🃏</div>
+                </div>
+            </div>
+            <div class="player" id="player2">
+                Player 2
+                <div class="card-container hidden" data-player="player2">
+                    <div class="card">🃏</div>
+                    <div class="card">🃏</div>
+                    <div class="card">🃏</div>
+                </div>
+            </div>
+            <div class="player" id="player3">
+                Player 3
+                <div class="card-container hidden" data-player="player3">
+                    <div class="card">🃏</div>
+                    <div class="card">🃏</div>
+                    <div class="card">🃏</div>
+                </div>
+            </div>
+            <div class="player" id="player4">
+                Player 4
+                <div class="card-container hidden" data-player="player4">
+                    <div class="card">🃏</div>
+                    <div class="card">🃏</div>
+                    <div class="card">🃏</div>
+                </div>
+            </div>
+        </div>
+        <div class="actions">
+            <button id="claim-btn">Claim</button>
+            <button id="challenge-btn">Challenge</button>
+        </div>
+        <div class="game-log">
+            <h2>Game Log</h2>
+            <ul id="log-list"></ul>
+        </div>
+    </div>
+</body>
+</html>
