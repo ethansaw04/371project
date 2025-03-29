@@ -20,11 +20,10 @@ public class Server {
         potionDeath = new boolean[maxNumPlayers][maxNumPotions];
 
         for (int i = 0; i < maxNumPlayers; i++) {
-            boolean setDeathPotion = false;
+            int deathNum = (int) (Math.random() * maxNumPotions);
             for (int j = 0; j < maxNumPotions; j++) {
-                if (((int) (Math.random() * maxNumPotions) + 1 == 1) && !setDeathPotion) {
+                if (j == deathNum) {
                     potionDeath[i][j] = true;
-                    setDeathPotion = true;
                 } else {
                     potionDeath[i][j] = false;
                 }
