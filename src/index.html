@@ -1,141 +1,145 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Card Game UI</title>
-    <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #222;
-        }
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <meta name="viewport" content="width=device-width, initial-scale=1.0">-->
+<!--    <title>Card Game UI</title>-->
+<!--    <style>-->
+<!--        body {-->
+<!--            display: flex;-->
+<!--            justify-content: center;-->
+<!--            align-items: center;-->
+<!--            height: 100vh;-->
+<!--            margin: 0;-->
+<!--            background-color: #222;-->
+<!--        }-->
 
-        .game-container {
-            width: 350px;
-            height: 600px;
-            background: url('https://www.transparenttextures.com/patterns/wood-pattern.png') center/cover;
-            border-radius: 15px;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 10px;
-        }
+<!--        .game-container {-->
+<!--            width: 350px;-->
+<!--            height: 600px;-->
+<!--            background: url('https://www.transparenttextures.com/patterns/wood-pattern.png') center/cover;-->
+<!--            border-radius: 15px;-->
+<!--            position: relative;-->
+<!--            display: flex;-->
+<!--            flex-direction: column;-->
+<!--            align-items: center;-->
+<!--            padding: 10px;-->
+<!--        }-->
 
-        /* Message at the top */
-        .message {
-            background: white;
-            padding: 5px 10px;
-            border-radius: 10px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
+<!--        /* Message at the top */-->
+<!--        .message {-->
+<!--            background: white;-->
+<!--            padding: 5px 10px;-->
+<!--            border-radius: 10px;-->
+<!--            font-weight: bold;-->
+<!--            margin-bottom: 10px;-->
+<!--        }-->
 
-        /* Player positions */
-        .player {
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
-            text-align: center;
-            font-size: 14px;
-            width: fit-content;
-        }
+<!--        /* Player positions */-->
+<!--        .player {-->
+<!--            padding: 10px;-->
+<!--            background: rgba(255, 255, 255, 0.2);-->
+<!--            border-radius: 10px;-->
+<!--            text-align: center;-->
+<!--            font-size: 14px;-->
+<!--            width: fit-content;-->
+<!--        }-->
 
-        .top {
-            position: absolute;
-            top: 40px;
-        }
+<!--        .top {-->
+<!--            position: absolute;-->
+<!--            top: 40px;-->
+<!--        }-->
 
-        .bottom {
-            position: absolute;
-            bottom: 40px;
-        }
+<!--        .bottom {-->
+<!--            position: absolute;-->
+<!--            bottom: 40px;-->
+<!--        }-->
 
-        .players-row {
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-        }
+<!--        .players-row {-->
+<!--            display: flex;-->
+<!--            justify-content: space-between;-->
+<!--            width: 100%;-->
+<!--            position: absolute;-->
+<!--            top: 50%;-->
+<!--            transform: translateY(-50%);-->
+<!--        }-->
 
-        .left {
-            margin-left: 10px;
-        }
+<!--        .left {-->
+<!--            margin-left: 10px;-->
+<!--        }-->
 
-        .right {
-            margin-right: 10px;
-        }
+<!--        .right {-->
+<!--            margin-right: 10px;-->
+<!--        }-->
 
-        /* Table section */
-        .table {
-            width: 200px;
-            height: 300px;
-            background: rgba(0, 0, 0, 0.2);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            border-radius: 10px;
-            position: relative;
-            margin-top: 50px;
-        }
+<!--        /* Table section */-->
+<!--        .table {-->
+<!--            width: 200px;-->
+<!--            height: 300px;-->
+<!--            background: rgba(0, 0, 0, 0.2);-->
+<!--            display: flex;-->
+<!--            flex-direction: column;-->
+<!--            align-items: center;-->
+<!--            justify-content: center;-->
+<!--            border-radius: 10px;-->
+<!--            position: relative;-->
+<!--            margin-top: 50px;-->
+<!--        }-->
 
-        /* Deck of cards */
-        .deck {
-            font-size: 50px;
-            cursor: pointer;
-        }
+<!--        /* Deck of cards */-->
+<!--        .deck {-->
+<!--            font-size: 50px;-->
+<!--            cursor: pointer;-->
+<!--        }-->
 
-        /* Buttons */
-        .start-btn {
-            background: green;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            margin-top: 0px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
+<!--        /* Buttons */-->
+<!--        .start-btn {-->
+<!--            background: green;-->
+<!--            color: white;-->
+<!--            border: none;-->
+<!--            padding: 5px 10px;-->
+<!--            margin-top: 0px;-->
+<!--            border-radius: 5px;-->
+<!--            cursor: pointer;-->
+<!--        }-->
 
-        .submit-btn {
-            border: none;
-            padding: 5px 10px;
-            border-radius: 5px;
-            margin-top: 10px;
-            background: yellow;
-            color: black;
-            cursor: pointer;
-        }
-    </style>
-</head>
-<body>
+<!--        .submit-btn {-->
+<!--            border: none;-->
+<!--            padding: 5px 10px;-->
+<!--            border-radius: 5px;-->
+<!--            margin-top: 10px;-->
+<!--            background: yellow;-->
+<!--            color: black;-->
+<!--            cursor: pointer;-->
+<!--        }-->
+<!--    </style>-->
+<!--</head>-->
+<!--<body>-->
 
-<div class="game-container">
-    <div class="message">Need to play a: <b>PLACEHOLDER BALLS</b></div>
+<!--<div class="game-container">-->
+<!--    <div class="message">Need to play a: <b>PLACEHOLDER BALLS</b></div>-->
 
-    <div class="player top">HARDCODED NAME</div>
+<!--    <div class="player top">HARDCODED NAME</div>-->
 
-    <div class="table">
-        <div class="deck">
-            <img src="cards/images/ace.png" alt="Ace Card" width="40">
-        </div>
-        <button class="start-btn">Start</button>
-        <button class="submit-btn">Submit</button>
-    </div>
+<!--    <div class="table">-->
+<!--        <div class="deck">-->
+<!--            <img src="cards/images/ace.png" alt="Ace Card" width="40">-->
+<!--            <img src="cards/images/king.png" alt="King Card" width="40">-->
+<!--            <img src="cards/images/queen.png" alt="Queen Card" width="40">-->
+<!--            <img src="cards/images/joker.png" alt="Joker Card" width="40">-->
+<!--            <img src="cards/images/back.png" alt="Back of Card" width="40">-->
+<!--        </div>-->
+<!--        <button class="start-btn">Start</button>-->
+<!--        <button class="submit-btn">Submit</button>-->
+<!--    </div>-->
 
-    <div class="players-row">
-        <div class="player left">HARDCODED NAME</div>
-        <div class="player right">HARDCODED NAME</div>
-    </div>
+<!--    <div class="players-row">-->
+<!--        <div class="player left">HARDCODED NAME</div>-->
+<!--        <div class="player right">HARDCODED NAME</div>-->
+<!--    </div>-->
 
-    <div class="player bottom">HARDCODED NAME</div>
-</div>
+<!--    <div class="player bottom">HARDCODED NAME</div>-->
+<!--</div>-->
 
-</body>
-</html>
+<!--</body>-->
+<!--</html>-->
