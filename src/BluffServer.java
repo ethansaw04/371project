@@ -27,7 +27,7 @@ public class BluffServer {
             }
 
             System.out.println("All players connected. Starting game!");
-            shuffleAndDistributeCards();
+            // shuffleAndDistributeCards();
             playGame();
 
         } catch (IOException e) {
@@ -45,6 +45,10 @@ public class BluffServer {
         Collections.shuffle(cards);
 
         int playerCount = players.size();
+        for (ClientHandler player : players) {
+            player.clearCards();
+        }
+
         for (int i = 0; i < cards.size(); i++) {
             players.get(i % playerCount).addCard(cards.get(i));
         }
@@ -56,6 +60,7 @@ public class BluffServer {
 
     private void playGame() {
         while (gameRunning && players.size() > 1) {
+            shuffleAndDistributeCards();
             playRound();
         }
         broadcast("Game Over! Winner: Player " + players.get(0).getPlayerID());
@@ -78,7 +83,9 @@ public class BluffServer {
             player.requestPlay(roundCard);
             
             // Wait for bluff call before proceeding to the next player's turn
-            waitForBluffCall();  // This blocks the next player's turn until the bluff phase is resolved.
+            if (waitForBluffCall()) {  // This blocks the next player's turn until the bluff phase is resolved.
+                break;
+            }
         }
     }
     
@@ -108,7 +115,7 @@ public class BluffServer {
         }
     }
     
-    private void waitForBluffCall() {
+    private boolean waitForBluffCall() {
         broadcast("Anyone can type 'BLUFF' to call a bluff!");
     
         // Use a synchronized block to make sure only one player can call bluff at a time.
@@ -121,15 +128,18 @@ public class BluffServer {
                     if (player.isBluffCalled()) {
                         resolveBluff(player);
                         bluffCalled = true;
-                        return;
+                        return true;
                     }
                 }
             }
     
             if (!bluffCalled) {
                 broadcast("No one called bluff. Round continues.");
+                return false;
             }
         }
+        
+        return false;
     }
 
     private void resolveBluff(ClientHandler accuser) {
@@ -183,6 +193,10 @@ public class ClientHandler implements Runnable {
 
     public void addCard(String card) {
         hand.add(card);
+    }
+
+    public void clearCards() {
+        hand.clear();
     }
 
     public void sendHand() {
