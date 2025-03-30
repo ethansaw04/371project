@@ -78,9 +78,9 @@ public class ClientHandler implements Runnable {
                     break;
                 }
             }
-            if (!found) {
-                selectedCards.add(hand.remove(0));
-            }
+            // if (!found) {
+            //     selectedCards.add(hand.remove(0));
+            // }
         }
 
         for (int i = 0; i < fakeCount && !hand.isEmpty(); i++) {

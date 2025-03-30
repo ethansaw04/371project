@@ -121,10 +121,10 @@ public class BluffServer {
     
             if (playedCards.isEmpty() || playedCards.size() != declaredCount + fakeCount) {
                 player.sendMessage("Invalid move! Try again.");
-                player.requestPlay(roundCard);
                 for (String str : playedCards) {
                     player.addCard(str);
                 }
+                player.requestPlay(roundCard);
                 return;
             }
     
