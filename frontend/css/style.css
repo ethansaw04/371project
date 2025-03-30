@@ -4,7 +4,7 @@ body {
     align-items: center;
     min-height: 100vh;  /* Changed from height to min-height */
     margin: 0;
-    background-color: #222;
+    background: url('/images/table.png') center/cover no-repeat;
     overflow: auto;  /* Changed from hidden to auto */
 }
 
@@ -40,6 +40,11 @@ body {
     transform: translateX(-50%);
 }
 
+.message{
+    position: absolute;
+    top: 220px; /* Adjusted from 100px to bring it closer */
+}
+
 .bottom {
     bottom: 20px;
     left: 50%;
@@ -73,8 +78,7 @@ body {
     justify-content: center;
     border-radius: 10px;
     position: relative;
-    background: rgba(0, 0, 0, 0.2);
-    margin-top: 20px;
+    margin-top: 80px;
     z-index: 1;
 }
 
