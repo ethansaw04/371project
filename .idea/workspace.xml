@@ -4,7 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="62b6c8f3-4b39-4ebf-8f18-fde10fb2f333" name="Changes" comment="" />
+    <list default="true" id="62b6c8f3-4b39-4ebf-8f18-fde10fb2f333" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/src/SimpleBluffBridge.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/js/game.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/js/game.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/BluffBridge.java" beforeDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />

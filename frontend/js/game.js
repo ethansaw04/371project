@@ -1,4 +1,4 @@
-// game.js - Frontend logic for Liars Table game with WebSocket integration
+// game.js - Frontend logic for Liars Table game with HTTP API integration
 
 // Player class to maintain state
 class Player {
@@ -17,7 +17,8 @@ const gameState = {
   cardsInPlay: [],
   requiredCard: null,
   isGameStarted: false,
-  socket: null
+  selectedCard: null,
+  pollingInterval: null
 };
 
 // Initialize the game
@@ -43,79 +44,63 @@ function initGame() {
     card.addEventListener('click', selectCard);
   });
 
-  // Connect to WebSocket server
-  connectWebSocket();
+  // Start polling for game state updates
+  startPolling();
 }
 
-// Connect to the WebSocket bridge
-function connectWebSocket() {
-  // Change the URL to your WebSocket bridge address
-  const socketUrl = `ws://${window.location.hostname}:8080`;
-  gameState.socket = new WebSocket(socketUrl);
+// Start polling the server for game state updates
+function startPolling() {
+  // Poll immediately
+  fetchGameState();
 
-  gameState.socket.onopen = function(event) {
-    console.log("Connected to game server");
-    // You might want to request initial game state here
-    gameState.socket.send("GET_GAME_STATE");
-  };
-
-  gameState.socket.onmessage = function(event) {
-    console.log("Message from server:", event.data);
-    processServerMessage(event.data);
-  };
-
-  gameState.socket.onclose = function(event) {
-    console.log("Disconnected from game server");
-    // Maybe try to reconnect after a delay
-    setTimeout(connectWebSocket, 5000);
-  };
-
-  gameState.socket.onerror = function(error) {
-    console.error("WebSocket error:", error);
-  };
+  // Then poll every 2 seconds
+  gameState.pollingInterval = setInterval(fetchGameState, 2000);
 }
 
-// Process messages from the server
-function processServerMessage(message) {
-  try {
-    // Try to parse as JSON
-    const data = JSON.parse(message);
+// Fetch game state from server
+function fetchGameState() {
+  fetch('/api/gamestate')
+    .then(response => response.json())
+    .then(data => {
+      console.log("Game state update:", data);
+      updateGameState(data);
+    })
+    .catch(error => {
+      console.error("Error fetching game state:", error);
+    });
+}
 
-    // Handle player status updates
-    if (data.playerStatus) {
-      // Update player alive/dead status
-      for (let i = 0; i < gameState.players.length; i++) {
-        const player = gameState.players[i];
-        if (data.playerStatus.hasOwnProperty(player.name)) {
-          player.isAlive = data.playerStatus[player.name];
-        }
+// Update game state with data from server
+function updateGameState(data) {
+  // Handle player status updates
+  if (data.playerStatus) {
+    // Update player alive/dead status
+    for (let i = 0; i < gameState.players.length; i++) {
+      const player = gameState.players[i];
+      if (data.playerStatus.hasOwnProperty(player.name)) {
+        player.isAlive = data.playerStatus[player.name];
       }
-
-      // Update display
-      updatePlayersDisplay();
     }
 
-    // Handle other game state updates
-    if (data.currentPlayer !== undefined) {
-      gameState.currentPlayer = data.currentPlayer;
-    }
+    // Update display
+    updatePlayersDisplay();
+  }
 
-    if (data.requiredCard) {
-      gameState.requiredCard = data.requiredCard;
-      document.querySelector('.message').innerHTML = `Need to play a: <b>${gameState.requiredCard}</b>`;
-    }
+  // Handle other game state updates
+  if (data.currentPlayer !== undefined) {
+    gameState.currentPlayer = data.currentPlayer;
+  }
 
-    if (data.isGameStarted !== undefined) {
-      gameState.isGameStarted = data.isGameStarted;
-      document.querySelector('.start-btn').disabled = gameState.isGameStarted;
-      document.querySelector('.submit-btn').disabled = !gameState.isGameStarted;
-      document.querySelector('.message').style.visibility = gameState.isGameStarted ? 'visible' : 'hidden';
-    }
+  if (data.requiredCard) {
+    gameState.requiredCard = data.requiredCard;
+    document.querySelector('.message').innerHTML = `Need to play a: <b>${gameState.requiredCard}</b>`;
+  }
 
-  } catch (e) {
-    // Not JSON, handle as text message
-    console.log("Text message from server:", message);
-    // You might want to display this in a message area
+  if (data.isGameStarted !== undefined) {
+    gameState.isGameStarted = data.isGameStarted;
+    document.querySelector('.start-btn').disabled = gameState.isGameStarted;
+    document.querySelector('.submit-btn').disabled = !gameState.isGameStarted;
+    document.querySelector('.message').style.visibility = gameState.isGameStarted ? 'visible' : 'hidden';
   }
 }
 
@@ -175,11 +160,25 @@ function startGame() {
   if (gameState.isGameStarted) return;
 
   // Send start game command to server
-  if (gameState.socket && gameState.socket.readyState === WebSocket.OPEN) {
-    gameState.socket.send("START_GAME");
-  } else {
-    alert("Not connected to game server");
-  }
+  sendCommand("START_GAME");
+}
+
+// Send command to the server
+function sendCommand(command) {
+  fetch('/api/command', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'text/plain'
+    },
+    body: command
+  })
+  .then(response => response.json())
+  .then(data => {
+    console.log("Command response:", data);
+  })
+  .catch(error => {
+    console.error("Error sending command:", error);
+  });
 }
 
 // Handle card selection
@@ -205,18 +204,14 @@ function submitMove() {
   if (!gameState.isGameStarted || !gameState.selectedCard) return;
 
   // Send move to server
-  if (gameState.socket && gameState.socket.readyState === WebSocket.OPEN) {
-    gameState.socket.send(`PLAY_CARD:${gameState.selectedCard}`);
+  sendCommand(`PLAY_CARD:${gameState.selectedCard}`);
 
-    // Clear selection
-    gameState.selectedCard = null;
-    document.querySelectorAll('.deck img').forEach(card => {
-      card.style.transform = '';
-      card.style.boxShadow = '';
-    });
-  } else {
-    alert("Not connected to game server");
-  }
+  // Clear selection
+  gameState.selectedCard = null;
+  document.querySelectorAll('.deck img').forEach(card => {
+    card.style.transform = '';
+    card.style.boxShadow = '';
+  });
 }
 
 // Initialize the game when the page loads
