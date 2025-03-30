@@ -3,7 +3,7 @@ import java.net.*;
 
 public class BluffClient {
     private static String SERVER_ADDRESS;
-    private static final int PORT = 12345;
+    private static int PORT;
 
     public static void main(String[] args) {
         if (args.length != 2) {
