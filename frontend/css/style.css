@@ -2,56 +2,48 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
+    min-height: 100vh;  /* Changed from height to min-height */
     margin: 0;
-    background: url('/images/table.png') center/cover no-repeat; /* Set the background image */
-    background-color: #222; /* Fallback color */
-    overflow: hidden; /* Prevent scrolling */
+    background-color: #222;
+    overflow: auto;  /* Changed from hidden to auto */
 }
 
 .game-container {
-    width: 900px;
-    height: 900px;
+    width: 1300px;
+    height: 650px;
     border-radius: 15px;
-    position: relative;
+    position: relative;  /* Essential for absolute positioning of children */
     display: flex;
     flex-direction: column;
     align-items: center;
     padding: 10px;
-    z-index: 1; /* Ensure game container is above the background */
-}
-
-/* Message at the top */
-.message {
-    background: white;
-    padding: 5px 10px;
-    border-radius: 10px;
-    font-weight: bold;
-    margin-bottom: 10px;
+    background: rgba(0, 0, 0, 0.3);  /* Added for visibility */
+    border: 1px solid #444;  /* Added for debugging */
 }
 
 /* Player positions */
 .player {
     padding: 10px;
-    background: rgba(255, 255, 255, 0.2);
-     border: 2px solid red;
+    background: rgba(255, 255, 255, 0.8);  /* Increased opacity */
+    border: 2px solid red;
     border-radius: 10px;
     text-align: center;
     font-size: 14px;
     width: fit-content;
-    z-index: 5; /* Ensure all players are above the background */
+    position: absolute;  /* Added this */
+    z-index: 10;  /* Increased z-index */
 }
 
 .top {
-    position: absolute;
-    top: 10px;
-    z-index: 10; /* Ensure the top player is above the table */
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 .bottom {
-    position: absolute;
-    bottom: 10px;
-    z-index: 10; /* Ensure the bottom player is above the table */
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 .players-row {
@@ -61,29 +53,32 @@ body {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    z-index: 5; /* Ensure the middle row of players is visible */
 }
 
 .left {
-    margin-left: 10px;
+    left: 20px;
 }
 
 .right {
-    margin-right: 10px;
+    right: 20px;
 }
 
 /* Table section */
 .table {
-    width: 900px;
-    height: 900px;
+    width: 500px;  /* Reduced from 900px */
+    height: 500px;  /* Reduced from 900px */
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     border-radius: 10px;
     position: relative;
-    z-index: 0; /* Ensure the table stays below the players */
+    background: rgba(0, 0, 0, 0.2);
+    margin-top: 20px;
+    z-index: 1;
 }
+
+/* Rest of your existing styles... */
 
 /* Deck of cards */
 .deck {
