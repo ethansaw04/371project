@@ -2,10 +2,19 @@ import java.io.*;
 import java.net.*;
 
 public class BluffClient {
-    private static final String SERVER_ADDRESS = "localhost";
+    private static String SERVER_ADDRESS;
     private static final int PORT = 12345;
 
     public static void main(String[] args) {
+        if (args.length != 2) {
+            System.out.println("Please enter server ip address and port number");
+            System.out.println("For example, java Client 127.0.0.1 12345");
+            return;
+        }
+
+        SERVER_ADDRESS = args[0];
+        PORT = Integer.parseInt(args[1]);
+
         try (Socket socket = new Socket(SERVER_ADDRESS, PORT);
              BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true);

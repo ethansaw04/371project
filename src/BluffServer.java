@@ -4,6 +4,7 @@ import java.util.*;
 
 public class BluffServer {
     private static final int PORT = 12345;
+    private static String ip_addr;
     private List<ClientHandler> players = new ArrayList<>();
     private int currentRound = -1;
     private boolean gameRunning = true;
@@ -14,15 +15,30 @@ public class BluffServer {
         new BluffServer().startServer();
     }
 
+    public String get_ip_addr() {
+        return ip_addr;
+    }
+
+    public int get_port() {
+        return PORT;
+    }
+
     private void startServer() {
+        try {
+            ip_addr = InetAddress.getLocalHost().getHostAddress();
+        } catch (UnknownHostException e) {
+            System.err.println("Error:" + e.getMessage());
+        }
+
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
-            System.out.println("Bluff Server started. Waiting for players...");
+            System.out.println("Bluff Server started! \nJoin at ip address: " + ip_addr + "\nPort: " + PORT);
+            System.out.println("Waiting for players...");
 
             while (players.size() < 4) {
                 Socket socket = serverSocket.accept();
                 ClientHandler player = new ClientHandler(socket, this, players.size() + 1);
                 players.add(player);
-                
+
                 new Thread(player).start();
                 System.out.println("Player " + players.size() + " connected.");
             }
