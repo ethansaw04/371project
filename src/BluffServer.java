@@ -10,6 +10,7 @@ public class BluffServer {
     private boolean gameRunning = true;
     private ClientHandler lastPlayer = null;
     private List<String> lastPlayedCards = new ArrayList<>();
+    private GameWebSocketServer wsServer;
 
     public static void main(String[] args) {
         new BluffServer().startServer();
@@ -22,6 +23,11 @@ public class BluffServer {
     public int get_port() {
         return PORT;
     }
+    
+    // Expose players list for WebSocket message handling
+    public List<ClientHandler> getPlayers() {
+        return players;
+    }
 
     private void startServer() {
         try {
@@ -29,6 +35,12 @@ public class BluffServer {
         } catch (UnknownHostException e) {
             System.err.println("Error:" + e.getMessage());
         }
+        
+        // Start the WebSocket server on port 8082.
+        wsServer = new GameWebSocketServer(8082);
+        wsServer.start();
+        // Let GameWebSocketServer know about this instance.
+        GameWebSocketServer.setBluffServer(this);
 
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("Bluff Server started! \nJoin at ip address: " + ip_addr + "\nPort: " + PORT);
@@ -38,7 +50,6 @@ public class BluffServer {
                 Socket socket = serverSocket.accept();
                 ClientHandler player = new ClientHandler(socket, this, players.size() + 1);
                 players.add(player);
-
                 new Thread(player).start();
                 System.out.println("Player " + players.size() + " connected.");
             }
@@ -49,6 +60,12 @@ public class BluffServer {
         } catch (IOException e) {
             System.out.println("Error Starting the Server");
         }
+    }
+
+    // Helper to send a turn update to the frontend.
+    public void sendTurnUpdate(int playerID) {
+        String json = "{\"playerId\": \"player" + playerID + "\", \"type\": \"TURN\"}";
+        GameWebSocketServer.broadcastToClients(json);
     }
 
     private void shuffleAndDistributeCards() {
@@ -97,13 +114,17 @@ public class BluffServer {
         ClientHandler needToRemove = null;
         for (ClientHandler player : new ArrayList<>(players)) {
             if (!players.contains(player)) continue;
+            
+            // Send turn update to frontend.
+            sendTurnUpdate(player.getPlayerID());
+            
             if (!player.requestPlay(roundCard)) {
                 needToRemove = player;
                 break;
             }
             
             // Wait for bluff call before proceeding to the next player's turn
-            if (waitForBluffCall()) {  // This blocks the next player's turn until the bluff phase is resolved.
+            if (waitForBluffCall()) {
                 break;
             }
         }
@@ -134,8 +155,6 @@ public class BluffServer {
             broadcast("Player " + player.getPlayerID() + " played " + (declaredCount + fakeCount) + " " + roundCard + "(s).");
             player.sendHand();
     
-            // waitForBluffCall();  // Wait for a bluff call after the move.
-    
         } catch (Exception e) {
             player.sendMessage("Invalid input. Try again.");
             player.requestPlay(roundCard);
@@ -145,7 +164,6 @@ public class BluffServer {
     private boolean waitForBluffCall() {
         broadcast("Anyone can type 'BLUFF' to call a bluff!");
     
-        // Use a synchronized block (Mutex) to make sure only one player can call bluff at a time.
         synchronized (this) {
             long startTime = System.currentTimeMillis();
             boolean bluffCalled = false;
@@ -174,9 +192,11 @@ public class BluffServer {
 
         if (wasLying) {
             broadcast("Bluff successful! Player " + lastPlayer.getPlayerID() + " was lying and is eliminated!");
+            GameWebSocketServer.broadcastToClients("{\"playerId\": \"player" + lastPlayer.getPlayerID() + "\", \"type\": \"DEAD\"}");
             players.remove(lastPlayer);
         } else {
             broadcast("Bluff failed! Player " + accuser.getPlayerID() + " is eliminated!");
+            GameWebSocketServer.broadcastToClients("{\"playerId\": \"player" + accuser.getPlayerID() + "\", \"type\": \"DEAD\"}");
             players.remove(accuser);
         }
 
@@ -191,4 +211,3 @@ public class BluffServer {
         }
     }
 }
-

@@ -44,11 +44,8 @@ public class ClientHandler implements Runnable {
         this.roundCard = roundCard;
         sendMessage("Your turn! Round is: " + roundCard);
         sendMessage("Your hand: " + hand);
-        // sendMessage("Enter the number of '" + roundCard + "' cards you are playing:");
 
         try {
-            // String move = in.readLine();
-
             sendMessage("Enter the number of ACTUAL '" + roundCard + "' cards you are playing:");
             String actual = in.readLine();
     
@@ -69,36 +66,22 @@ public class ClientHandler implements Runnable {
     public List<String> getSelectedCards(int count, int fakeCount) {
         List<String> selectedCards = new ArrayList<>();
         for (int i = 0; i < count && !hand.isEmpty(); i++) {
-            boolean found = false;
             for (int j = 0; j < hand.size(); j++) {
                 if (hand.get(j).equals(roundCard)) {
                     selectedCards.add(roundCard);
                     hand.remove(j);
-                    found = true;
                     break;
                 }
             }
-            // if (!found) {
-            //     selectedCards.add(hand.remove(0));
-            // }
         }
-
         for (int i = 0; i < fakeCount && !hand.isEmpty(); i++) {
-            boolean found = false;
             for (int j = 0; j < hand.size(); j++) {
                 if (!hand.get(j).equals(roundCard)) {
-                    //selectedCards.add(roundCard);
                     selectedCards.add(hand.remove(j));
-                    // hand.remove(j);
-                    found = true;
                     break;
                 }
             }
-            // if (!found) {
-            //     selectedCards.add(hand.remove(0));
-            // }
         }
-
         return selectedCards;
     }
 
@@ -114,7 +97,12 @@ public class ClientHandler implements Runnable {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return false;
+        return bluffCalled;
+    }
+    
+    // Setter for bluffCalled (used by WebSocket messages)
+    public void setBluffCalled(boolean flag) {
+        bluffCalled = flag;
     }
 
     public void sendMessage(String message) {
