@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import org.json.JSONObject; // Ensure you have a JSON library in your classpath
+import org.json.JSONObject;
 
 public class GameWebSocketServer extends WebSocketServer {
 
@@ -50,7 +50,7 @@ public class GameWebSocketServer extends WebSocketServer {
                 // Forward the move to the corresponding ClientHandler in BluffServer.
                 for (var player : bluffServer.getPlayers()) {
                     if (player.getPlayerID() == playerId) {
-                        // You might pass the current round instead of a literal string.
+                        // Pass a placeholder for current round; backend logic uses its own currentRound.
                         bluffServer.processMove(player, move, "currentRound");
                         break;
                     }

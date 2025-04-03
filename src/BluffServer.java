@@ -62,10 +62,37 @@ public class BluffServer {
         }
     }
 
-    // Helper to send a turn update to the frontend.
+    // Broadcast a TURN message to clients
     public void sendTurnUpdate(int playerID) {
         String json = "{\"playerId\": \"player" + playerID + "\", \"type\": \"TURN\"}";
         GameWebSocketServer.broadcastToClients(json);
+    }
+    
+    // Broadcast a full game state message.
+    public void broadcastGameState(String message, String currentRound) {
+        String json = "{\"type\":\"GAME_STATE\", \"message\":\"" + message + "\", \"currentRound\":\"" + currentRound + "\"}";
+        GameWebSocketServer.broadcastToClients(json);
+    }
+    
+    // After a move is processed, determine and broadcast next player's turn.
+    private void advanceTurn() {
+        if (players.size() > 0 && lastPlayer != null) {
+            int currentIndex = players.indexOf(lastPlayer);
+            int nextIndex = (currentIndex + 1) % players.size();
+            int nextPlayerID = players.get(nextIndex).getPlayerID();
+            sendTurnUpdate(nextPlayerID);
+            broadcastGameState("It's Player " + nextPlayerID + "'s turn", getRoundCard());
+        }
+    }
+    
+    // Helper to retrieve current round card for game state message.
+    private String getRoundCard() {
+        return switch (currentRound) {
+            case 0 -> "A";
+            case 1 -> "K";
+            case 2 -> "Q";
+            default -> "";
+        };
     }
 
     private void shuffleAndDistributeCards() {
@@ -101,36 +128,18 @@ public class BluffServer {
 
     private void playRound() {
         currentRound = (currentRound + 1) % 3;
-        String roundCard = switch (currentRound) {
-            case 0 -> "A";
-            case 1 -> "K";
-            case 2 -> "Q";
-            default -> "";
-        };
+        String roundCard = getRoundCard();
     
         System.out.println("New round: " + roundCard + "s");
         broadcast("Round: " + roundCard);
     
-        ClientHandler needToRemove = null;
-        for (ClientHandler player : new ArrayList<>(players)) {
-            if (!players.contains(player)) continue;
-            
-            // Send turn update to frontend.
-            sendTurnUpdate(player.getPlayerID());
-            
-            if (!player.requestPlay(roundCard)) {
-                needToRemove = player;
-                break;
-            }
-            
-            // Wait for bluff call before proceeding to the next player's turn
-            if (waitForBluffCall()) {
-                break;
-            }
+        // For simplicity, assume that turns advance via WebSocket MOVE messages.
+        // The initial turn can be set to the first player:
+        if (!players.isEmpty()) {
+            sendTurnUpdate(players.get(0).getPlayerID());
+            broadcastGameState("It's Player " + players.get(0).getPlayerID() + "'s turn", roundCard);
         }
-        if (needToRemove != null) {
-            players.remove(needToRemove);
-        }
+        // Further turn advancement will be handled in processMove().
     }
     
     public void processMove(ClientHandler player, String move, String roundCard) {
@@ -154,6 +163,9 @@ public class BluffServer {
     
             broadcast("Player " + player.getPlayerID() + " played " + (declaredCount + fakeCount) + " " + roundCard + "(s).");
             player.sendHand();
+            
+            // After processing the move, advance the turn.
+            advanceTurn();
     
         } catch (Exception e) {
             player.sendMessage("Invalid input. Try again.");

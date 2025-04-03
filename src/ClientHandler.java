@@ -100,7 +100,6 @@ public class ClientHandler implements Runnable {
         return bluffCalled;
     }
     
-    // Setter for bluffCalled (used by WebSocket messages)
     public void setBluffCalled(boolean flag) {
         bluffCalled = flag;
     }

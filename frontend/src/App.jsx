@@ -18,6 +18,8 @@ const App = () => {
           console.log("Received:", data);
           if (data.type === "TURN") {
             setMsg(`Player turn: ${data.playerId}`);
+          } else if (data.type === "GAME_STATE") {
+            setMsg(data.message);
           } else if (data.type === "DEAD") {
             setMsg(`Player eliminated: ${data.playerId}`);
           }
