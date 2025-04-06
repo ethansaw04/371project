@@ -111,6 +111,31 @@ public class ClientHandler implements Runnable {
     @Override
     public void run() {
         sendMessage("Welcome to Bluff! Waiting for other players...");
+
+        try {
+            while (true) {
+                // Wait for a message from the client (like "BLUFF" calls)
+                if (in.ready()) {
+                    String input = in.readLine();
+                    if (input.equalsIgnoreCase("BLUFF")) {
+                        bluffCalled = true;
+                    }
+                }
+
+                // Brief pause to prevent CPU hogging
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Player " + playerID + " disconnected.");
+        }
+    }
+
+    public void notifyTurn() {
+        requestPlay(roundCard);
     }
 
     public String getRoundCard() {

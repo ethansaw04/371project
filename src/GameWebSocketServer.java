@@ -41,21 +41,27 @@ public class GameWebSocketServer extends WebSocketServer {
         try {
             JSONObject json = new JSONObject(message);
             String type = json.getString("type");
-            int playerId = json.getInt("playerId");
-            
-            if ("MOVE".equals(type)) {
+
+            // Handle different message types
+            if ("REGISTER".equals(type)) {
+                // A client is registering as a specific player
+                int playerId = json.getInt("playerId");
+                connectionToPlayer.put(conn, playerId);
+                System.out.println("WebSocket registered for Player " + playerId);
+            } else if ("MOVE".equals(type)) {
+                int playerId = json.getInt("playerId");
                 int actual = json.getInt("actual");
                 int fake = json.getInt("fake");
                 String move = actual + " " + fake;
                 // Forward the move to the corresponding ClientHandler in BluffServer.
                 for (var player : bluffServer.getPlayers()) {
                     if (player.getPlayerID() == playerId) {
-                        // Pass a placeholder for current round; backend logic uses its own currentRound.
-                        bluffServer.processMove(player, move, "currentRound");
+                        bluffServer.processMove(player, move, bluffServer.getRoundCard());
                         break;
                     }
                 }
             } else if ("BLUFF".equals(type)) {
+                int playerId = json.getInt("playerId");
                 // Forward the bluff call to the corresponding ClientHandler.
                 for (var player : bluffServer.getPlayers()) {
                     if (player.getPlayerID() == playerId) {
@@ -68,6 +74,40 @@ public class GameWebSocketServer extends WebSocketServer {
             e.printStackTrace();
         }
     }
+//
+//    @Override
+//    public void onMessage(WebSocket conn, String message) {
+//        System.out.println("Received message from client: " + message);
+//        try {
+//            JSONObject json = new JSONObject(message);
+//            String type = json.getString("type");
+//            int playerId = json.getInt("playerId");
+//
+//            if ("MOVE".equals(type)) {
+//                int actual = json.getInt("actual");
+//                int fake = json.getInt("fake");
+//                String move = actual + " " + fake;
+//                // Forward the move to the corresponding ClientHandler in BluffServer.
+//                for (var player : bluffServer.getPlayers()) {
+//                    if (player.getPlayerID() == playerId) {
+//                        // Pass a placeholder for current round; backend logic uses its own currentRound.
+//                        bluffServer.processMove(player, move, "currentRound");
+//                        break;
+//                    }
+//                }
+//            } else if ("BLUFF".equals(type)) {
+//                // Forward the bluff call to the corresponding ClientHandler.
+//                for (var player : bluffServer.getPlayers()) {
+//                    if (player.getPlayerID() == playerId) {
+//                        player.setBluffCalled(true);
+//                        break;
+//                    }
+//                }
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//    }
 
     @Override
     public void onError(WebSocket conn, Exception ex) {

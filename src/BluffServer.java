@@ -62,10 +62,22 @@ public class BluffServer {
         }
     }
 
+    public void notifyPlayerTurn(int playerID) {
+        for (ClientHandler player : players) {
+            if (player.getPlayerID() == playerID) {
+                String roundCard = getRoundCard();
+                player.requestPlay(roundCard);
+                break;
+            }
+        }
+    }
+
     // Broadcast a TURN message to clients
     public void sendTurnUpdate(int playerID) {
         String json = "{\"playerId\": \"player" + playerID + "\", \"type\": \"TURN\"}";
         GameWebSocketServer.broadcastToClients(json);
+
+        notifyPlayerTurn(playerID);
     }
     
     // Broadcast a full game state message.
@@ -80,13 +92,20 @@ public class BluffServer {
             int currentIndex = players.indexOf(lastPlayer);
             int nextIndex = (currentIndex + 1) % players.size();
             int nextPlayerID = players.get(nextIndex).getPlayerID();
+
+            // Check if everyone has played once (round is complete)
+            if (nextIndex == 0) {  // Back to the first player
+                completeRound();
+                return;
+            }
+
             sendTurnUpdate(nextPlayerID);
             broadcastGameState("It's Player " + nextPlayerID + "'s turn", getRoundCard());
         }
     }
     
     // Helper to retrieve current round card for game state message.
-    private String getRoundCard() {
+    public String getRoundCard() {
         return switch (currentRound) {
             case 0 -> "A";
             case 1 -> "K";
@@ -126,6 +145,12 @@ public class BluffServer {
         broadcast("Game Over! Winner: Player " + players.get(0).getPlayerID());
     }
 
+    public void completeRound() {
+        synchronized (this) {
+            notify(); // Notify that the round is complete
+        }
+    }
+
     private void playRound() {
         currentRound = (currentRound + 1) % 3;
         String roundCard = getRoundCard();
@@ -135,10 +160,25 @@ public class BluffServer {
     
         // For simplicity, assume that turns advance via WebSocket MOVE messages.
         // The initial turn can be set to the first player:
+//        if (!players.isEmpty()) {
+//            sendTurnUpdate(players.get(0).getPlayerID());
+//            broadcastGameState("It's Player " + players.get(0).getPlayerID() + "'s turn", roundCard);
+//        }
+
         if (!players.isEmpty()) {
             sendTurnUpdate(players.get(0).getPlayerID());
             broadcastGameState("It's Player " + players.get(0).getPlayerID() + "'s turn", roundCard);
+
+            // Wait for this round to complete before starting a new one
+            synchronized (this) {
+                try {
+                    wait(); // Will be notified when round is complete
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
         }
+
         // Further turn advancement will be handled in processMove().
     }
     
@@ -215,6 +255,8 @@ public class BluffServer {
         if (players.size() == 1) {
             gameRunning = false;
         }
+
+        completeRound();
     }
 
     public void broadcast(String message) {
@@ -222,4 +264,5 @@ public class BluffServer {
             player.sendMessage(message);
         }
     }
+
 }
