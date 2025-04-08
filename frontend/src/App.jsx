@@ -126,12 +126,14 @@ const App = () => {
       }
 
       // Look for round information in the message
-      if (msg.includes('Round:')) {
-        const roundMatch = msg.match(/Round: ([A-Z])/);
+      if (msg.includes('Round:') || msg.includes('Round is:')) {
+        const roundMatch = msg.match(/Round:? (?:is:)? ?([A-Z])/);
         if (roundMatch && roundMatch[1]) {
+          console.log("Detected round card:", roundMatch[1]);
           setGameState(prevState => ({
             ...prevState,
-            requiredCard: roundMatch[1]
+            requiredCard: roundMatch[1],
+            isGameStarted: true
           }));
         }
       }
@@ -154,8 +156,24 @@ const App = () => {
       }
     };
 
-    // For testing only - set the hand that matches the console output
-    setPlayerHand(['A', 'A', 'K', 'K', 'K']);
+    // Process initial welcome messages that might be in the console already
+    // This helps with initial game state setup
+    const consoleLog = console.log;
+    setTimeout(() => {
+      // Look for existing messages in the DOM that might contain game info
+      const consoleElements = document.querySelectorAll('div.turn-message, div.console-message');
+      consoleElements.forEach(element => {
+        const text = element.textContent;
+        extractCardsFromMessage(text);
+      });
+
+      // Set initial test data if needed
+      if (playerHand.length === 0) {
+        const initialTestHand = window.initialHand || ['A', 'Q', 'A', 'Q', 'K'];
+        setPlayerHand(initialTestHand);
+        console.info("Set initial test hand:", initialTestHand);
+      }
+    }, 500);
 
     return () => {
       // Restore original console.log
@@ -336,13 +354,18 @@ const App = () => {
 
   // Enhanced game status message with prominent round information
   const renderStatusMessage = () => {
+    // Don't show the waiting message if we already have a required card
+    const displayMessage = gameState.requiredCard && message === "Waiting for game to start..."
+      ? `Current Round: ${gameState.requiredCard}`
+      : message;
+
     return (
       <div style={{
         position: 'absolute',
-        top: '200px',
+        top: '120px',
         left: '50%',
         transform: 'translateX(-50%)',
-        zIndex: 10,
+        zIndex: 20,
         background: 'rgba(255, 255, 255, 0.95)',
         padding: '15px 25px',
         borderRadius: '10px',
@@ -352,7 +375,7 @@ const App = () => {
         border: gameState.isGameStarted ? '2px solid gold' : '2px solid #ccc'
       }}>
         <div style={{ fontSize: '18px', fontWeight: 'bold' }}>
-          {message}
+          {displayMessage}
         </div>
         {gameState.requiredCard && (
           <div style={{
@@ -420,8 +443,18 @@ const App = () => {
           color: '#333'
         }}>
           {gameState.requiredCard && (
-            <div style={{ marginBottom: '8px' }}>
-              Enter the number of {gameState.requiredCard} cards:
+            <div style={{
+              marginBottom: '8px',
+              fontSize: '16px',
+              padding: '5px',
+              background: 'rgba(0, 0, 255, 0.1)',
+              borderRadius: '5px'
+            }}>
+              Enter the number of <span style={{
+                color: 'red',
+                fontWeight: 'bold',
+                fontSize: '18px'
+              }}>{gameState.requiredCard}</span> cards:
             </div>
           )}
         </div>
