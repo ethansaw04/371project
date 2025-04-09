@@ -75,14 +75,23 @@ public class BluffServer {
     }
 
     private void playGame() {
+        ClientHandler winner = null;
         while (gameRunning && players.size() > 1) {
             shuffleAndDistributeCards();
-            playRound();
+            winner = playRound();
+            if (winner != null) {
+                break;
+            }
         }
-        broadcast("Game Over! Winner: Player " + players.get(0).getPlayerID());
+        if (winner != null) {
+            broadcast("Player " + winner.getPlayerID() + " emptied their hand and has won!");
+            broadcast("Game Over! Winner: Player " + winner.getPlayerID());
+        } else {
+            broadcast("Game Over! Winner: Player " + players.get(0).getPlayerID());
+        }
     }
 
-    private void playRound() {
+    private ClientHandler playRound() {
         currentRound = (currentRound + 1) % 3;
         String roundCard = switch (currentRound) {
             case 0 -> "A";
@@ -92,24 +101,54 @@ public class BluffServer {
         };
     
         System.out.println("New round: " + roundCard + "s");
-        broadcast("Round: " + roundCard);
+        broadcast("New Round: " + roundCard + "'s round");
+        broadcast("There are 6 Aces, 6 Queens, 6 Kings, 2 Jacks, distributed amongst you.");
+        broadcast("Jacks can disguise as any card. Find who's lying.");
     
         ClientHandler needToRemove = null;
-        for (ClientHandler player : new ArrayList<>(players)) {
+        int random = (int)(Math.random() * players.size());
+        while (true) {
+            ClientHandler player = players.get(random);
+            broadcast("It is now Player " + player.getPlayerID() + "'s turn");
+
             if (!players.contains(player)) continue;
             if (!player.requestPlay(roundCard)) {
                 needToRemove = player;
                 break;
             }
+
+            broadcast("Player " + player.getPlayerID() + "'s hand now has only " + player.hand.size() + " cards left!");
             
             // Wait for bluff call before proceeding to the next player's turn
             if (waitForBluffCall()) {  // This blocks the next player's turn until the bluff phase is resolved.
                 break;
             }
+
+            if (player.hand.isEmpty()) {
+                return player;
+            }
+
+            random++;
+            random %= players.size();
         }
+
+        // for (ClientHandler player : new ArrayList<>(players)) {
+            // if (!players.contains(player)) continue;
+            // if (!player.requestPlay(roundCard)) {
+            //     needToRemove = player;
+            //     break;
+            // }
+            
+            // // Wait for bluff call before proceeding to the next player's turn
+            // if (waitForBluffCall()) {  // This blocks the next player's turn until the bluff phase is resolved.
+            //     break;
+            // }
+        // }
         if (needToRemove != null) {
             players.remove(needToRemove);
         }
+
+        return null;
     }
     
     public void processMove(ClientHandler player, String move, String roundCard) {
@@ -119,7 +158,8 @@ public class BluffServer {
             int fakeCount = Integer.parseInt(parts[1]);
             List<String> playedCards = player.getSelectedCards(declaredCount, fakeCount);
     
-            if (playedCards.isEmpty() || playedCards.size() != declaredCount + fakeCount) {
+            // if (playedCards.isEmpty() || playedCards.size() != declaredCount + fakeCount) {
+            if (playedCards.size() != declaredCount + fakeCount) {
                 player.sendMessage("Invalid move! Try again.");
                 for (String str : playedCards) {
                     player.addCard(str);
@@ -175,9 +215,11 @@ public class BluffServer {
         if (wasLying) {
             broadcast("Bluff successful! Player " + lastPlayer.getPlayerID() + " was lying and is eliminated!");
             players.remove(lastPlayer);
+            lastPlayer.sendMessage("You have been eliminated!");
         } else {
             broadcast("Bluff failed! Player " + accuser.getPlayerID() + " is eliminated!");
             players.remove(accuser);
+            accuser.sendMessage("You have been eliminated!");
         }
 
         if (players.size() == 1) {
@@ -191,4 +233,3 @@ public class BluffServer {
         }
     }
 }
-

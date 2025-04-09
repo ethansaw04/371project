@@ -7,7 +7,7 @@ public class ClientHandler implements Runnable {
     private BluffServer server;
     private PrintWriter out;
     private BufferedReader in;
-    private List<String> hand = new ArrayList<>();
+    public List<String> hand = new ArrayList<>();
     private int playerID;
     private boolean bluffCalled = false;
     private String roundCard = "";
@@ -49,13 +49,12 @@ public class ClientHandler implements Runnable {
         try {
             // String move = in.readLine();
 
-            sendMessage("Enter the number of ACTUAL '" + roundCard + "' cards you are playing:");
+            sendMessage("Enter the number of ACTUAL '" + roundCard + "' and FAKE '" + roundCard + "' cards you are playing:");
             String actual = in.readLine();
-    
-            sendMessage("Enter the number of FAKE '" + roundCard + "' cards you are playing:");
-            String fake = in.readLine();
-    
-            String move = actual + " " + fake;
+            
+            String[] parts = actual.split(" ");
+
+            String move = parts[1] + " " + parts[2];
             server.processMove(this, move, roundCard);
         } catch (SocketException e) {
             System.out.println("Player connection disconnected");
@@ -124,6 +123,7 @@ public class ClientHandler implements Runnable {
     @Override
     public void run() {
         sendMessage("Welcome to Bluff! Waiting for other players...");
+        sendMessage("You are Player " + playerID);
     }
 
     public String getRoundCard() {
