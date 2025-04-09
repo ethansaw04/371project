@@ -4,173 +4,146 @@ import java.util.*;
 
 public class BluffServer {
     private static final int PORT = 12345;
-    private static String ip_addr;
     private List<ClientHandler> players = new ArrayList<>();
     private int currentRound = -1;
     private boolean gameRunning = true;
     private ClientHandler lastPlayer = null;
     private List<String> lastPlayedCards = new ArrayList<>();
+    private int lastActualCount, lastClaimedCount;
 
     public static void main(String[] args) {
         new BluffServer().startServer();
     }
 
-    public String get_ip_addr() {
-        return ip_addr;
-    }
-
-    public int get_port() {
-        return PORT;
-    }
-
     private void startServer() {
         try {
-            ip_addr = InetAddress.getLocalHost().getHostAddress();
+            String ip = InetAddress.getLocalHost().getHostAddress();
+            System.out.println("Bluff Server started on " + ip + ":" + PORT);
         } catch (UnknownHostException e) {
-            System.err.println("Error:" + e.getMessage());
+            e.printStackTrace();
         }
 
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
-            System.out.println("Bluff Server started! \nJoin at ip address: " + ip_addr + "\nPort: " + PORT);
             System.out.println("Waiting for players...");
-
+            // accept exactly just 4 players 
             while (players.size() < 4) {
-                Socket socket = serverSocket.accept();
-                ClientHandler player = new ClientHandler(socket, this, players.size() + 1);
-                players.add(player);
-
-                new Thread(player).start();
-                System.out.println("Player " + players.size() + " connected.");
+                Socket sock = serverSocket.accept();
+                ClientHandler h = new ClientHandler(sock, this, players.size() + 1);
+                players.add(h);
+                new Thread(h).start();
+                broadcast("Player " + h.getPlayerID() + " has joined (" + players.size() + "/4).");
             }
-
-            System.out.println("All players connected. Starting game!");
+            broadcast("All players connected. Starting game!");
             playGame();
-
         } catch (IOException e) {
-            System.out.println("Error Starting the Server");
-        }
-    }
-
-    private void shuffleAndDistributeCards() {
-        List<String> cards = new ArrayList<>(Arrays.asList(
-            "A", "A", "A", "A", "A", "A",
-            "K", "K", "K", "K", "K", "K",
-            "Q", "Q", "Q", "Q", "Q", "Q",
-            "J", "J"
-        ));
-        Collections.shuffle(cards);
-
-        int playerCount = players.size();
-        for (ClientHandler player : players) {
-            player.clearCards();
-        }
-
-        for (int i = 0; i < cards.size(); i++) {
-            players.get(i % playerCount).addCard(cards.get(i));
-        }
-
-        for (ClientHandler player : players) {
-            player.sendHand();
+            e.printStackTrace();
         }
     }
 
     private void playGame() {
+        // call playRound
         while (gameRunning && players.size() > 1) {
             shuffleAndDistributeCards();
             playRound();
         }
-        broadcast("Game Over! Winner: Player " + players.get(0).getPlayerID());
+        if (players.size() == 1) {
+            broadcast("Game Over! Winner: Player " + players.get(0).getPlayerID());
+        } else {
+            broadcast("Game Over! No winner.");
+        }
     }
 
+    // play 3 rounds 
     private void playRound() {
         currentRound = (currentRound + 1) % 3;
-        String roundCard = switch (currentRound) {
-            case 0 -> "A";
-            case 1 -> "K";
-            case 2 -> "Q";
-            default -> "";
-        };
-    
-        System.out.println("New round: " + roundCard + "s");
-        broadcast("Round: " + roundCard);
-    
-        ClientHandler needToRemove = null;
-        for (ClientHandler player : new ArrayList<>(players)) {
-            if (!players.contains(player)) continue;
-            if (!player.requestPlay(roundCard)) {
-                needToRemove = player;
-                break;
+        String rc = getRoundCard();
+        broadcast("Round: " + rc);
+
+        // snapshot at start of round to kep track of the whos in whos out yfm 
+        List<ClientHandler> roundPlayers = new ArrayList<>(players);
+
+        // each player takes a turn 
+        for (ClientHandler p : roundPlayers) {
+            if (!players.contains(p)) continue;  // skip if eliminated earlier
+            lastPlayer = null;
+            p.sendMessage("Your turn!");
+            p.sendMessage("Enter the number of ACTUAL " + rc + " and FAKE " + rc + " cards you are playing:");
+
+            // wait for MOVE
+            synchronized (this) {
+                try { wait(); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
             }
-            
-            // Wait for bluff call before proceeding to the next player's turn
-            if (waitForBluffCall()) {  // This blocks the next player's turn until the bluff phase is resolved.
-                break;
-            }
-        }
-        if (needToRemove != null) {
-            players.remove(needToRemove);
+
+            // give everyone 5s to call bluff
+            waitForBluffCall();
+
+            if (players.size() <= 1) break;
         }
     }
-    
-    public void processMove(ClientHandler player, String move, String roundCard) {
-        try {
-            String[] parts = move.split(" ");
-            int declaredCount = Integer.parseInt(parts[0]);
-            int fakeCount = Integer.parseInt(parts[1]);
-            List<String> playedCards = player.getSelectedCards(declaredCount, fakeCount);
-    
-            if (playedCards.isEmpty() || playedCards.size() != declaredCount + fakeCount) {
-                player.sendMessage("Invalid move! Try again.");
-                for (String str : playedCards) {
-                    player.addCard(str);
-                }
-                player.requestPlay(roundCard);
-                return;
-            }
-    
-            lastPlayer = player;
-            lastPlayedCards = playedCards;
-    
-            broadcast("Player " + player.getPlayerID() + " played " + (declaredCount + fakeCount) + " " + roundCard + "(s).");
-            player.sendHand();
-    
-            // waitForBluffCall();  // Wait for a bluff call after the move.
-    
-        } catch (Exception e) {
-            player.sendMessage("Invalid input. Try again.");
-            player.requestPlay(roundCard);
+
+    private void shuffleAndDistributeCards() {
+        List<String> deck = new ArrayList<>();
+        Collections.addAll(deck,
+            "A","A","A","A","A","A",
+            "K","K","K","K","K","K",
+            "Q","Q","Q","Q","Q","Q",
+            "J","J"
+        );
+        Collections.shuffle(deck);
+
+        for (ClientHandler p : players) p.clearCards();
+        int pc = players.size();
+        for (int i = 0; i < deck.size(); i++) {
+            players.get(i % pc).addCard(deck.get(i));
         }
+        for (ClientHandler p : players) p.sendHand();
     }
-    
-    private boolean waitForBluffCall() {
-        broadcast("Anyone can type 'BLUFF' to call a bluff!");
-    
-        // Use a synchronized block (Mutex) to make sure only one player can call bluff at a time.
+
+    // called by ClientHandler when a MOVE arrives
+    public void processMove(ClientHandler player, int actual, int claimed) {
+        String rc = getRoundCard();
+        lastPlayer = player;
+        lastActualCount  = actual;
+        lastClaimedCount = claimed;
+        lastPlayedCards  = player.getSelectedCards(actual);  // remove only actual cards
+
+        broadcast("Player " + player.getPlayerID() + "  claimed " + rc + "(s)");
+        player.sendHand();
+
+        // wake up playRound
         synchronized (this) {
-            long startTime = System.currentTimeMillis();
-            boolean bluffCalled = false;
-    
-            while (System.currentTimeMillis() - startTime < 5000) {
-                for (ClientHandler player : players) {
-                    if (player.isBluffCalled()) {
-                        resolveBluff(player);
-                        bluffCalled = true;
-                        return true;
-                    }
+            notify();
+        }
+    }
+
+    private boolean waitForBluffCall() {
+        broadcast("Anyone may type BLUFF in the next 5 seconds to call it!");
+        long start = System.currentTimeMillis();
+        boolean called = false;
+
+        while (System.currentTimeMillis() - start < 5000) {
+            for (ClientHandler p : players) {
+                if (p.isBluffCalled()) {
+                    called = true;
+                    resolveBluff(p);
+                    break;
                 }
             }
-    
-            if (!bluffCalled) {
-                broadcast("No one called bluff. Round continues.");
-                return false;
-            }
+            if (called) break;
+            try { Thread.sleep(100); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
         }
-        
-        return false;
+
+        if (!called) {
+            broadcast("No one called bluff. Round continues.");
+        }
+
+        // reset bluff flags
+        for (ClientHandler p : players) p.setBluffCalled(false);
+        return called;
     }
 
     private void resolveBluff(ClientHandler accuser) {
-        boolean wasLying = lastPlayedCards.stream().anyMatch(card -> !card.equals("J") && !card.equals(lastPlayer.getRoundCard()));
+        boolean wasLying = (lastActualCount != lastClaimedCount);
 
         if (wasLying) {
             broadcast("Bluff successful! Player " + lastPlayer.getPlayerID() + " was lying and is eliminated!");
@@ -179,16 +152,21 @@ public class BluffServer {
             broadcast("Bluff failed! Player " + accuser.getPlayerID() + " is eliminated!");
             players.remove(accuser);
         }
-
-        if (players.size() == 1) {
-            gameRunning = false;
-        }
+        if (players.size() == 1) gameRunning = false;
     }
 
-    public void broadcast(String message) {
-        for (ClientHandler player : players) {
-            player.sendMessage(message);
-        }
+    public String getRoundCard() {
+        return switch (currentRound) {
+            case 0 -> "A";
+            case 1 -> "K";
+            case 2 -> "Q";
+            default -> "?";
+        };
+    }
+
+    // broacast a text line to all the connected players 
+    private void broadcast(String msg) {
+        System.out.println("[SERVER] " + msg);
+        for (ClientHandler p : players) p.sendMessage(msg);
     }
 }
-

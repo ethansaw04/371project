@@ -3,130 +3,70 @@ import java.net.*;
 import java.util.*;
 
 public class ClientHandler implements Runnable {
-    private Socket socket;
-    private BluffServer server;
-    private PrintWriter out;
-    private BufferedReader in;
-    private List<String> hand = new ArrayList<>();
-    private int playerID;
-    private boolean bluffCalled = false;
-    private String roundCard = "";
+    private final Socket socket;
+    private final BluffServer server;
+    private final PrintWriter out;
+    private final BufferedReader in;
+    private final List<String> hand = new ArrayList<>();
+    private final int playerID;
+    private volatile boolean bluffCalled = false;
 
-    public ClientHandler(Socket socket, BluffServer server, int playerID) {
+    public ClientHandler(Socket socket, BluffServer server, int playerID) throws IOException {
         this.socket = socket;
         this.server = server;
         this.playerID = playerID;
-        try {
-            out = new PrintWriter(socket.getOutputStream(), true);
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        } catch (IOException e) {
-            e.printStackTrace();
+        this.out = new PrintWriter(socket.getOutputStream(), true);
+        this.in  = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+    }
+
+    public int getPlayerID() { return playerID; }
+    public void clearCards()   { hand.clear(); }
+    public void addCard(String c) { hand.add(c); }
+    public void sendHand()      { sendMessage("Your hand: " + hand); }
+
+    public boolean isBluffCalled() { return bluffCalled; }
+    public void setBluffCalled(boolean b) { bluffCalled = b; }
+
+    /** Remove exactly `actual` cards of the round card from the hand */
+    public List<String> getSelectedCards(int actual) {
+        List<String> sel = new ArrayList<>();
+        String rc = server.getRoundCard();
+        for (int i = 0; i < actual; i++) {
+            if (hand.remove(rc)) sel.add(rc);
         }
+        return sel;
     }
 
-    public int getPlayerID() {
-        return playerID;
-    }
-
-    public void addCard(String card) {
-        hand.add(card);
-    }
-
-    public void clearCards() {
-        hand.clear();
-    }
-
-    public void sendHand() {
-        sendMessage("Your hand: " + hand);
-    }
-
-    public boolean requestPlay(String roundCard) {
-        this.roundCard = roundCard;
-        sendMessage("Your turn! Round is: " + roundCard);
-        sendMessage("Your hand: " + hand);
-        // sendMessage("Enter the number of '" + roundCard + "' cards you are playing:");
-
-        try {
-            // String move = in.readLine();
-
-            sendMessage("Enter the number of ACTUAL '" + roundCard + "' cards you are playing:");
-            String actual = in.readLine();
-    
-            sendMessage("Enter the number of FAKE '" + roundCard + "' cards you are playing:");
-            String fake = in.readLine();
-    
-            String move = actual + " " + fake;
-            server.processMove(this, move, roundCard);
-        } catch (SocketException e) {
-            System.out.println("Player connection disconnected");
-            return false;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return true;
-    }
-
-    public List<String> getSelectedCards(int count, int fakeCount) {
-        List<String> selectedCards = new ArrayList<>();
-        for (int i = 0; i < count && !hand.isEmpty(); i++) {
-            boolean found = false;
-            for (int j = 0; j < hand.size(); j++) {
-                if (hand.get(j).equals(roundCard)) {
-                    selectedCards.add(roundCard);
-                    hand.remove(j);
-                    found = true;
-                    break;
-                }
-            }
-            // if (!found) {
-            //     selectedCards.add(hand.remove(0));
-            // }
-        }
-
-        for (int i = 0; i < fakeCount && !hand.isEmpty(); i++) {
-            boolean found = false;
-            for (int j = 0; j < hand.size(); j++) {
-                if (!hand.get(j).equals(roundCard)) {
-                    //selectedCards.add(roundCard);
-                    selectedCards.add(hand.remove(j));
-                    // hand.remove(j);
-                    found = true;
-                    break;
-                }
-            }
-            // if (!found) {
-            //     selectedCards.add(hand.remove(0));
-            // }
-        }
-
-        return selectedCards;
-    }
-
-    public boolean isBluffCalled() {
-        try {
-            if (in.ready()) {
-                String response = in.readLine();
-                if (response.equalsIgnoreCase("BLUFF")) {
-                    bluffCalled = true;
-                    return true;
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-
-    public void sendMessage(String message) {
-        out.println(message);
+    public void sendMessage(String msg) {
+        out.println(msg);
     }
 
     @Override
     public void run() {
-        sendMessage("Welcome to Bluff! Waiting for other players...");
-    }
-
-    public String getRoundCard() {
-        return roundCard;
+        try {
+            sendMessage("Connected as Player " + playerID);
+            sendMessage("Welcome to Bluff! Waiting for other players...");
+            String line;
+            while ((line = in.readLine()) != null) {
+                if (line.startsWith("MOVE")) {
+                    String[] parts = line.split("\\s+");
+                    if (parts.length == 3) {
+                        int actual  = Integer.parseInt(parts[1]);
+                        int claimed = Integer.parseInt(parts[2]);
+                        server.processMove(this, actual, claimed);
+                    } else {
+                        sendMessage("Invalid MOVE. Use: MOVE <actual> <claimed>");
+                    }
+                }
+                else if (line.equalsIgnoreCase("BLUFF")) {
+                    bluffCalled = true;
+                }
+                else {
+                    sendMessage("Unknown command: " + line);
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Player " + playerID + " disconnected.");
+        }
     }
 }
