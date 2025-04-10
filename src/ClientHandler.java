@@ -46,11 +46,8 @@ public class ClientHandler implements Runnable {
         this.roundCard = roundCard;
         sendMessage("Your turn! Round is: " + roundCard);
         sendMessage("Your hand: " + hand);
-        // sendMessage("Enter the number of '" + roundCard + "' cards you are playing:");
 
         try {
-            // String move = in.readLine();
-
             //get the player's move
             sendMessage("Enter the number of ACTUAL '" + roundCard + "' and FAKE '" + roundCard + "' cards you are playing:");
             String actual = in.readLine();
@@ -83,9 +80,6 @@ public class ClientHandler implements Runnable {
                     break;
                 }
             }
-            // if (!found) {
-            //     selectedCards.add(hand.remove(0));
-            // }
         }
 
         //grab FAKE cards in this for loop, e.g. if it's a K round, grab specified # of non Ks
@@ -100,9 +94,6 @@ public class ClientHandler implements Runnable {
                     break;
                 }
             }
-            // if (!found) {
-            //     selectedCards.add(hand.remove(0));
-            // }
         }
 
         return selectedCards;
