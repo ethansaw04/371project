@@ -7,7 +7,7 @@ This document outlines the steps to run the Bluff card game server and client ap
 1.  **Navigate to the `src` directory.**
 2.  **Compile the Java source files:** Use the command `javac *.java` in your terminal.
 3.  **Start the Bluff Server:** Execute the command `java BluffServer` in your terminal.
-    * The server will start and output its IP address and port number to the console. **Note down these values**, as they will be needed to run the clients.
+    * The server will start and output its IP address and port number to the console.
 
 ## Running the Client
 
